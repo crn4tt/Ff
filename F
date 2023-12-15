@@ -2,38 +2,32 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Определение структуры для даты рождения
+#define clear() printf("\033[H\033[J")
+
 typedef struct {
     int day;
     int month;
     int year;
-} date_t;
+} birth_date;
 
-// Определение структуры для данных о человеке
 typedef struct {
     char name[50];
     char surname[50];
-    date_t birthday;
-} person_t;
+    birth_date birthday;
+} person;
 
-// Определение максимального количества записей в записной книжке
 #define MAX_RECORDS 100
 
-// Объявление глобального массива структур для хранения записей
-person_t notebook[MAX_RECORDS];
+person notebook[MAX_RECORDS];
 
-// Объявление глобальной переменной для хранения текущего количества записей
 int num_records = 0;
 
-// Функция для добавления новой записи в записную книжку
 void add_record() {
-    // Проверка, есть ли свободное место в массиве
     if (num_records == MAX_RECORDS) {
-        printf("Записная книжка полна, невозможно добавить новую запись.\n");
+        printf("Записная книжка заполнена, невозможно добавить новую запись.\n");
         return;
     }
-    // Ввод данных о человеке с клавиатуры
-    person_t p;
+    person p;
     printf("Введите имя: ");
     scanf("%s", p.name);
     printf("Введите фамилию: ");
@@ -44,87 +38,75 @@ void add_record() {
     scanf("%d", &p.birthday.month);
     printf("Введите год рождения: ");
     scanf("%d", &p.birthday.year);
-    // Добавление записи в конец массива
     notebook[num_records] = p;
     num_records++;
     printf("Запись успешно добавлена.\n");
 }
 
-// Функция для удаления записи из записной книжки по индексу
 void delete_record(int index) {
-    // Проверка, существует ли запись с таким индексом
     if (index < 0 || index >= num_records) {
         printf("Неверный индекс, невозможно удалить запись.\n");
         return;
     }
-    // Сдвиг оставшихся записей влево на одну позицию
     for (int i = index; i < num_records - 1; i++) {
         notebook[i] = notebook[i + 1];
     }
-    // Уменьшение текущего количества записей на единицу
     num_records--;
     printf("Запись успешно удалена.\n");
 }
 
-// Функция для записи массива структур в файл
 void save_to_file(char *filename) {
-    // Открытие файла для записи в бинарном режиме
     FILE *f = fopen(filename, "wb");
-    // Проверка, удалось ли открыть файл
     if (f == NULL) {
-        printf("Невозможно открыть файл для записи.\n");
+        printf("Невозможно открыть файл.\n");
         return;
     }
-    // Запись текущего количества записей в файл
     fwrite(&num_records, sizeof(int), 1, f);
-    // Запись массива структур в файл
-    fwrite(notebook, sizeof(person_t), num_records, f);
-    // Закрытие файла
+    fwrite(notebook, sizeof(person), num_records, f);
     fclose(f);
     printf("Записная книжка успешно сохранена в файл %s.\n", filename);
 }
 
-// Функция для сравнения двух дат рождения
-// Возвращает -1, если первая дата раньше второй
-// Возвращает 0, если даты равны
-// Возвращает 1, если первая дата позже второй
-int compare_dates(date_t d1, date_t d2) {
-    // Сравнение годов
+void open_file(char *filename)
+{
+    FILE *f = fopen(filename, "r");
+    if (f == NULL) {
+        printf("Невозможно открыть файл.\n");
+        return;
+    }
+    int num;
+    fread(&num, sizeof(int), 1, f);
+    fread(notebook, sizeof(person), num, f);
+    num_records++;
+}
+
+int compare_dates(birth_date d1, birth_date d2) {
     if (d1.year < d2.year) {
         return -1;
     }
     if (d1.year > d2.year) {
         return 1;
     }
-    // Сравнение месяцев
     if (d1.month < d2.month) {
         return -1;
     }
     if (d1.month > d2.month) {
         return 1;
     }
-    // Сравнение дней
     if (d1.day < d2.day) {
         return -1;
     }
     if (d1.day > d2.day) {
         return 1;
     }
-    // Даты равны
     return 0;
 }
 
-// Функция для сортировки массива структур по дате рождения
-// Использует алгоритм сортировки пузырьком
 void sort_by_birthday() {
-    // Перебор всех элементов массива, кроме последнего
     for (int i = 0; i < num_records - 1; i++) {
-        // Перебор всех элементов массива, кроме отсортированных
         for (int j = 0; j < num_records - i - 1; j++) {
-            // Сравнение двух соседних элементов по дате рождения
             if (compare_dates(notebook[j].birthday, notebook[j + 1].birthday) > 0) {
-                // Обмен местами, если первый элемент позже второго
-                person_t temp = notebook[j];
+                person temp = notebook[j];
                 notebook[j] = notebook[j + 1];
                 notebook[j + 1] = temp;
             }
@@ -133,37 +115,26 @@ void sort_by_birthday() {
     printf("Записная книжка отсортирована по дате рождения.\n");
 }
 
-// Функция для поиска записи по имени и фамилии
-// Возвращает индекс найденной записи или -1, если такой записи нет
 int search_by_name_and_surname(char *name, char *surname) {
-    // Перебор всех элементов массива
     for (int i = 0; i < num_records; i++) {
-        // Сравнение имени и фамилии с искомыми
         if (strcmp(notebook[i].name, name) == 0 && strcmp(notebook[i].surname, surname) == 0) {
-            // Возврат индекса найденной записи
             return i;
         }
     }
-    // Возврат -1, если такой записи нет
     return -1;
 }
 
-// Функция для вывода записи на экран по индексу
 void print_record(int index) {
-    // Проверка, существует ли запись с таким индексом
     if (index < 0 || index >= num_records) {
         printf("Неверный индекс, невозможно вывести запись.\n");
         return;
     }
-    // Вывод данных о человеке на экран
     printf("Имя: %s\n", notebook[index].name);
     printf("Фамилия: %s\n", notebook[index].surname);
     printf("Дата рождения: %d.%d.%d\n", notebook[index].birthday.day, notebook[index].birthday.month, notebook[index].birthday.year);
 }
 
-// Функция для вывода меню на экран и обработки выбора пользователя
 void menu() {
-    // Вывод списка доступных операций на экран
     printf("Выберите операцию:\n");
     printf("1. Добавить новую запись\n");
     printf("2. Удалить запись\n");
@@ -171,18 +142,55 @@ void menu() {
     printf("4. Отсортировать записную книжку по дате рождения\n");
     printf("5. Найти запись по имени и фамилии\n");
     printf("6. Вывести запись на экран\n");
-    printf("7. Выйти из программы\n");
-    // Ввод номера операции с клавиатуры
+    printf("7. Открыть файл\n");
     int choice;
+    int index;
+    char filename[50];
     scanf("%d", &choice);
-    // Обработка выбора пользователя
+    clear();
     switch (choice) {
         case 1:
-            // Добавление новой записи
             add_record();
             break;
         case 2:
-            // Удаление записи
             printf("Введите индекс записи, которую хотите удалить: ");
-            int index;
-            scanf("%d", &index
+            scanf("%d", &index);
+            delete_record(index);
+            break;
+        case 3:
+            printf("Введите название файла: ");
+            scanf("%s", filename);
+            save_to_file(filename);
+            break;
+        case 4:
+            sort_by_birthday();
+            break;
+        case 5:
+            printf("Введите имя: ");
+            char *name, *surname;
+            scanf("%s", name);
+            printf("Введите фамилию: ");
+            scanf("%s", surname);
+            search_by_name_and_surname(name, surname);
+            break;
+        case 6:
+            printf("Введите индекс записи, которую хотите вывести: ");
+            scanf("%d", &index);
+            print_record(index);
+            break;
+        case 7:
+            printf("Введите название файла: ");
+            scanf("%s", filename);
+            open_file(filename);
+            break;
+    }
+}
+
+int main()
+{
+    while (1)
+    {
+        menu();
+        printf("\n\n");
+    }
+}
